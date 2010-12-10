@@ -1,0 +1,16 @@
+Predicting comment upvotes on Reddit 
+=====================================
+Will Foran <will.foran@gmail.com>
+
+Objective
+---------
+Predict vote counts on comments posted to http://www.reddit.com[Reddit]
+
+Methods
+-------
+
+Parse
+~~~~~
+Learn
+~~~~~
+
