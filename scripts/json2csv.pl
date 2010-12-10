@@ -51,7 +51,7 @@ sub findch{
 			switch ($k){
 					case "readability" { my $re=readability($body); $feats{$k}=$re?$re:0;}
 					case "wordcount" { $feats{$k}=wordcount($body);}
-					case "time" { $feats{$k}=$r->{'data'}->{'created_utc'}-$TIME;}
+					case "time" { my $age= $r->{'data'}->{'created_utc'}-$TIME; $feats{$k}=$age>=0?$age:'?';}
 					case "depth" { $feats{$k}=$idx;}
 					case "subreddit" { $feats{$k}=$SUBREDDIT;}
 					case "ups" {
@@ -69,9 +69,9 @@ sub findch{
 			}
 			print "," if $n!=0;
 			print $feats{$k};
-			print ',"', $body , '"';
 			$n+=1;
 		}
+		print ",\"$body\"";
 		print "\n";
 		
 

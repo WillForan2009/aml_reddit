@@ -4,6 +4,12 @@
 #
 #
 
+#all the folders that will be used
+if false; then
+   mkdir {csv,data,results}
+fi
+
+
 if  false ; then 				#new stories
     #get stories
     ./scripts/getStories.pl
@@ -28,7 +34,7 @@ if  false ; then 				#new data file
 
     #requires perl packages JSON and Lingua::EN::Fathom
     #if biglist containes spaces, bad things happen im sure
-    ./scripts/parse.pl $biglist > $ARFF
+    ./scripts/json2arff.pl $biglist > $ARFF
 fi
 
 
@@ -49,5 +55,5 @@ if false ; then					#new baseline
 fi
 
 
-#change pruning
-java -Djava.awt.headless=true -classpath /usr/share/java/weka/weka.jar weka.classifiers.meta.CVParameterSelection -P"C .1 .8 5" -X 10 -S1 -W weka.classifiers.trees.J48 --
+#change pruning(.05 to .5) and min number (1 to 2)
+java -Djava.awt.headless=true -classpath /usr/share/java/weka/weka.jar -c 2 -t $ARFF weka.classifiers.meta.CVParameterSelection -P "C .05 .5 5" -P "M 1 2 2" -X 10 -S 1 -W weka.classifiers.trees.J48 --

@@ -28,7 +28,7 @@ if(!@ARGV) {
 print '@relation ',"'Reddit Upboats' \n\n";
 for my $k (keys %feats){
 	print "\@attribute $k ";
-	if($k eq "subreddit") { print "{AskReddit, funny, gaming, iama, pics, politics, programming, science, technology, worldnews, wtf}\n";} 
+	if($k eq "subreddit") { print "{AskReddit, funny, gaming, iama, pics, politics, programming, science, technology, worldnews, WTF}\n";} 
 	if($k eq "ups") { print "{0,1,2,3,4,5}\n";} 
 	else {print "numeric\n";}
 }
@@ -61,7 +61,8 @@ sub findch{
 			switch ($k){
 					case "readability" { my $re=readability($body); $feats{$k}=$re?$re:0;}
 					case "wordcount" { $feats{$k}=wordcount($body);}
-					case "time" { $feats{$k}=$r->{'data'}->{'created_utc'}-$TIME;}
+					#case "time" { $feats{$k}=$r->{'data'}->{'created_utc'}-$TIME;}
+					case "time" { my $age= $r->{'data'}->{'created_utc'}-$TIME; $feats{$k}=$age>=0?$age:'?';}
 					case "depth" { $feats{$k}=$idx;}
 					case "subreddit" { $feats{$k}=$SUBREDDIT;}
 					case "ups" {
