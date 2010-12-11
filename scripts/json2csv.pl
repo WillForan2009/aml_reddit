@@ -25,6 +25,9 @@ if(!@ARGV) {
     exit;
 }
 
+#header
+print "wc,votes,time,readability,subreddit,depth,body\n";
+
 while(@ARGV){    
     my $file = shift;
     my $j=JSON->new->allow_nonref;
