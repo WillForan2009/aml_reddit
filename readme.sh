@@ -56,4 +56,4 @@ fi
 
 
 #change pruning(.05 to .5) and min number (1 to 2)
-java -Djava.awt.headless=true -classpath /usr/share/java/weka/weka.jar -c 2 -t $ARFF weka.classifiers.meta.CVParameterSelection -P "C .05 .5 5" -P "M 1 2 2" -X 10 -S 1 -W weka.classifiers.trees.J48 --
+java -Djava.awt.headless=true -classpath /usr/share/java/weka/weka.jar  weka.classifiers.meta.CVParameterSelection -c 2 -t $ARFF -P "C .05 .5 5" -P "M 1 2 2" -X 10 -S 1 -W weka.classifiers.trees.J48 --
