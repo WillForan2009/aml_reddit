@@ -34,11 +34,11 @@ if  true; then 				#new data file
 
     #requires perl packages JSON and Lingua::EN::Fathom
     #if biglist containes spaces, bad things happen im sure
-    ./scripts/jsonTo.pl arff $biglist > $ARFF
+    ./scripts/jsonTo.pl arff time,subreddit,wordcount,readability,depth,ups $biglist > $ARFF
 fi
 
 
-
+#WEKA
 if false ; then					#new baseline
     LEARNERS="classifiers.bayes.NaiveBayes
     classifiers.trees.J48
@@ -60,3 +60,11 @@ if false; then
 
     java -classpath /usr/share/java/weka/weka.jar weka.experiment.Experiment -l weka.exp.xml -r -D -O
 fi
+
+
+#MALLET
+ATTS='time,ups,body'
+./scripts/jsonTo.pl $ATTS $biglislt > csv/forMallet.txt 
+MALLET_HOME="$HOME/bin/mallet"
+$MALLET_HOME/bin/mallet import-file --input csv/forMallet.txt --output csv/words.mallet
+$MALLET_HOME/bin/mallet train-classifier --input csv/words.mallet --trainer MaxEnt --trainer NaiveBayes --training-portion .9 --num-trials 10 --output-classifier $(date +%F).classifier
