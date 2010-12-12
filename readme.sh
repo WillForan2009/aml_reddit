@@ -24,7 +24,7 @@ ARFF=csv/$(date +%F)-small.arff
 
 
 
-if  false ; then 				#new data file
+if  true; then 				#new data file
     biglist=$(for d in data/*/; do
 	for json in $(ls ${d}*|head -n 3); 
 	    do echo -n "$json "; 
@@ -34,7 +34,7 @@ if  false ; then 				#new data file
 
     #requires perl packages JSON and Lingua::EN::Fathom
     #if biglist containes spaces, bad things happen im sure
-    ./scripts/json2arff.pl $biglist > $ARFF
+    ./scripts/jsonTo.pl arff $biglist > $ARFF
 fi
 
 
@@ -54,6 +54,9 @@ if false ; then					#new baseline
     #use -l to recall a model, c is which attr to use as class, -d saves model
 fi
 
+if false; then
+    #change pruning(.05 to .5) and min number (1 to 2)
+    java -Djava.awt.headless=true -classpath /usr/share/java/weka/weka.jar  weka.classifiers.meta.CVParameterSelection -c 2 -t $ARFF -P "C .05 .5 5" -P "M 1 2 2" -X 10 -S 1 -W weka.classifiers.trees.J48 --
 
-#change pruning(.05 to .5) and min number (1 to 2)
-java -Djava.awt.headless=true -classpath /usr/share/java/weka/weka.jar  weka.classifiers.meta.CVParameterSelection -c 2 -t $ARFF -P "C .05 .5 5" -P "M 1 2 2" -X 10 -S 1 -W weka.classifiers.trees.J48 --
+    java -classpath /usr/share/java/weka/weka.jar weka.experiment.Experiment -l weka.exp.xml -r -D -O
+fi
