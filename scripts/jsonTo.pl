@@ -12,16 +12,20 @@ my %feats;
 my @ORDER; #=('time','subreddit','wordcount','readability','depth','ups');
 #downs levenshtein author replies parent_id link_id body id likes subreddit_id created_utc ups name created subreddit body_html
 
-if(!@ARGV || !$ARGV[1]=~/^(arff)|(csv)$/) {
-    print "USAGE: $0 arff|csv jsonfile jsonfile jsonfile ...\n";
+if(@ARGV<3 || !$ARGV[1]=~/^(arff)|(csv)$/) {
+    print "USAGE: $0 arff|csv attribute,attribute jsonfile jsonfile jsonfile ...\n";
+    print"\twhere attribute is a comma delerated combination of any:\n";
+    print"\tbody,time,subreddit,wordcount,readability,depth\n";
     exit;
 }
 
 my $type=shift;
+@ORDER=split(',', shift);
+#push  @ORDER, 'ups'; #this doesn't always go last
 
 #arff header
 if($type eq 'arff'){
-    @ORDER=('time','subreddit','wordcount','readability','depth','ups');
+    #@ORDER=('time','subreddit','wordcount','readability','depth','ups');
     print '@relation ',"'Reddit Upboats-", time,"' \n\n";
     for my $k (@ORDER){
 	    print "\@attribute $k ";
@@ -34,7 +38,7 @@ if($type eq 'arff'){
 
 #csv header
 else{ #($type eq 'csv'){
-    @ORDER=('body','subreddit','wordcount','readability','depth','ups');
+    #@ORDER=('body','subreddit','wordcount','readability','depth','ups');
     print join(',',@ORDER), "\n";
 }
 
@@ -82,7 +86,14 @@ sub findch{
 					case "unicode" { $feats{$k}=$body=~s/[^[:ascii:]]//g;}
 					case "hasCAPS" { $feats{$k}=$body=~/[A-Z]+/;}
 					case "hasFormat" { $feats{$k}=$body=~/(\[.+\])|(_.+_)|(\*.+\*)/;}
-					case "body" { $body=~s/,/ /g; $feats{'body'}='"'.$body.'"'; } #remove , and add quotes
+					case "body" { $body=~s/,/ /g; 
+						     #$feats{'body'}='"'.$body.'"';
+						     
+						     #mallet chantes
+						     $body=~s/\n/ /g; #for mallet 
+						     $feats{'body'}=$body;
+
+						     } #remove , and add quotes
 					case "ups" {
 					    my $ups=$r->{'data'}->{'ups'};
 						    if( $ups==0 ) {$ups = 0 }
@@ -99,7 +110,7 @@ sub findch{
 		}
 		my @output;
 		for my $feat (@ORDER){ push  @output, $feats{$feat} }
-		print join(',',@output), "\n";
+		print join(', ',@output), "\n";
 		
 
 	}
