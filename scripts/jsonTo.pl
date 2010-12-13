@@ -37,6 +37,7 @@ if($type eq 'arff'){
     for my $k (@ORDER){
 	    print "\@attribute $k ";
 	    if($k eq "ups") { print '{' , join(',',values(%UPS)), "}\n"; } 
+	    #if($k eq "ups") { print "numeric\n"; } 
 	    elsif($k eq "subreddit") { print "{AskReddit, funny, gaming, IAmA, pics, politics, programming, science, technology, worldnews, WTF}\n";} 
 	    else {print "numeric\n";}
     }
@@ -82,8 +83,8 @@ sub findch{
 		
 		#only compute if asked
 		my $re;my $wc;
-		if($feats{'readability'}||$feats{'wordcount'}) {
-		    my ($re, $wc)=textanaly($body);
+		if(exists $feats{'readability'}|| exists $feats{'wordcount'}) {
+		    ($re, $wc)=textanaly($body);
 		    if(!$re){$re=0;} 
 		}
 
@@ -91,29 +92,30 @@ sub findch{
 
 		for my $k (@ORDER) {
 			switch ($k){
-					case "time" { my $age= $r->{'data'}->{'created_utc'}-$TIME; return if($age<0); $feats{$k}=$age;}
-					case "readability" { $feats{$k}=$re}
-					case "wordcount" { $feats{$k}=$wc;}
-					case "depth" { $feats{$k}=$idx;}
-					case "subreddit" { $feats{$k}=$SUBREDDIT;}
+					case "time" { my $age= $r->{'data'}->{'created_utc'}-$TIME; return if($age<0); $feats{$k}=$age; last;}
+					case "readability" { $feats{$k}=$re; last;}
+					case "wordcount" { $feats{$k}=$wc; last;}
+					case "depth" { $feats{$k}=$idx; last;}
+					case "subreddit" { $feats{$k}=$SUBREDDIT; last;}
 					#case "hasUnicode" { $feats{$k}=$body=~s/[^[:ascii:]]//g;}
-					case "hasUnicode" { $feats{$k}=$uniCount?$uniCount:0;}
-					case "hasCAPS" { my $has=0; $has++ while($body=~/[A-Z]{2,}/g); $feats{$k}=$has;}
-					case "hasNum" { my $has=0; $has++ while($body=~/[0-9]+/g); $feats{$k}=$has;}
-					case "hasFormat" {my $has=0; $has++ while($body=~/(\[.+\])|(_.+_)|(\*.+\*)/g); $feats{$k}=$has;}
-					case "isQuestion" {my $has=0; $has++ while($body=~/(what)|(how)|(where)|(when)|(who)|(\?)/ig); $feats{$k}=$has;}
-					case "isMeta" {my $has=0; $has++ while($body=~/(karma)|(vote)|(upboat)/ig); $feats{$k}=$has;}
+					case "hasUnicode" { $feats{$k}=$uniCount?$uniCount:0; last;}
+					case "hasCAPS" { my $has=0; $has++ while($body=~/[A-Z]{2,}/g); $feats{$k}=$has; last;}
+					case "hasNum" { my $has=0; $has++ while($body=~/[0-9]+/g); $feats{$k}=$has; last;}
+					case "hasFormat" {my $has=0; $has++ while($body=~/(\[.+\])|(_.+_)|(\*.+\*)/g); $feats{$k}=$has; last;}
+					case "hasQuote" {my $has=0; $has++ while($body=~/\&gt;/g); $feats{$k}=$has; last;}
+					case "isQuestion" {my $has=0; $has++ while($body=~/(what)|(how)|(where)|(when)|(who)|(\?)/ig); $feats{$k}=$has; last;}
+					case "isMeta" {my $has=0; $has++ while($body=~/(karma)|(vote)|(upboat)/ig); $feats{$k}=$has; last;}
 					case "body" { 
 					
 						     #for SIDE
-						     $body=~s/,/ /g; 
-						     $feats{'body'}='"'.$body.'"';
+						     #$body=~s/,/ /g; 
+						     #$feats{'body'}='"'.$body.'"';
 						     
 						     #for MALLET
-						     #$body=~s/\n/ /g; #for mallet 
-						     #$feats{'body'}=$body;
+						     $body=~s/\n/ /g; #for mallet 
+						     $feats{'body'}=$body;
 
-						     } #remove , and add quotes
+						      last;} #remove , and add quotes
 					case "ups" {
 					    my $ups=$r->{'data'}->{'ups'}-$r->{'data'}->{'downs'};
 					   # $feats{'ups'}=$ups;
@@ -123,7 +125,7 @@ sub findch{
 					            last;
 					        }
 					    }
-					}
+					     last;}
 					else {$feats{$k}=$r->{'data'}->{$k};}
 			}
 		}
