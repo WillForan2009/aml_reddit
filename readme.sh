@@ -9,7 +9,7 @@ if false; then
    mkdir {csv,data,results}
 fi
 
-if  false ; then 				#new stories
+if false; then 				#new stories
     #get stories
     ./scripts/getStories.pl
 fi
@@ -30,11 +30,12 @@ fi
 
 #create arff file
 PNUM=7
-ARFF=csv/$(date +%F)-${PNUM}baseline-binary.arff
+DESC=hasQuote
+ARFF=csv/$(date +%F)-${PNUM}${DESC}.arff
 
 
 
-if true; then 				#new data file
+if false; then 				#new data file
     biglist=$(for d in data/*/; do
 	for json in $(ls ${d}*|head -n $PNUM); 
 	    do echo -n "$json "; 
@@ -44,7 +45,7 @@ if true; then 				#new data file
 
     #requires perl packages JSON and Lingua::EN::Fathom
     #if biglist containes spaces, bad things happen im sure
-    FEATS='depth,time,subreddit,ups'
+    FEATS='isMeta,isQuestion,hasQuote,hasUnicode,hasNum,hasCAPS,hasFormat,wordcount,readability,depth,time,subreddit,ups'
     ./scripts/jsonTo.pl arff $FEATS  $biglist > $ARFF
 
     #weka.filters.unsupervised.attribute.Discretize-unset-class-temporarily-F-B2-M-1.0-Rlast
@@ -52,13 +53,13 @@ fi
 
 
 #WEKA
-if true; then					#new baseline
-    OUTDIR=results/$(date +%F)/baseline-binary
-    mkdir $OUTDIR
+if  false; then					#new baseline
+    OUTDIR=results/$(date +%F)/${DESC} 
+    mkdir -p $OUTDIR
     LEARNERS="classifiers.bayes.NaiveBayes
     classifiers.trees.J48
-    classifiers.functions.SMO
     classifiers.rules.JRip"
+    #classifiers.functions.SMO
     #clusterers.EM" 
     
     #numeric learners
@@ -73,6 +74,8 @@ if true; then					#new baseline
 	java -Djava.awt.headless=true -classpath /usr/share/java/weka/weka.jar weka.$LEARNER  -t $ARFF -d $OUTDIR/$LEARNER.model > $OUTDIR/$LEARNER.txt
     done;
     #use -l to recall a model, c is which attr to use as class, -d saves model
+
+    #java -classpath /usr/share/java/weka/weka.jar weka.classifiers.meta.Vote -S 1 -B "weka.classifiers.rules.JRip -F 3 -N 2.0 -O 2 -S 1" -B "weka.classifiers.bayes.NaiveBayes " -R MAX
 fi
 
 if false; then
@@ -85,9 +88,15 @@ fi
 
 #MALLET
 if false; then
-    ATTS='time,ups,body'
-    ./scripts/jsonTo.pl $ATTS $biglislt > csv/forMallet.txt 
+    ATTS='ups,body'
+    #./scripts/jsonTo.pl $ATTS $biglislt > csv/forMallet.csv 
     MALLET_HOME="$HOME/bin/mallet"
-    $MALLET_HOME/bin/mallet import-file --input csv/forMallet.txt --output csv/words.mallet
-    $MALLET_HOME/bin/mallet train-classifier --input csv/words.mallet --trainer MaxEnt --trainer NaiveBayes --training-portion .9 --num-trials 10 --output-classifier $(date +%F).classifier
+    $MALLET_HOME/bin/mallet import-file --input csv/forMallet.csv --output csv/words.mallet
+    $MALLET_HOME/bin/mallet train-classifier --input csv/words.mallet --trainer MaxEnt --trainer NaiveBayes --training-portion .7 --num-trials 5 --output-classifier results/$(date +%F)/mallet.classifier |tee results/$(date +%F)/mallet.out.txt
+fi
+
+if true; then
+#finally done
+#java -classpath /usr/share/java/weka/weka.jar weka.classifiers.meta.Vote -S 1 -B "weka.classifiers.rules.JRip -F 3 -N 2.0 -O 2 -S 1" -B "weka.classifiers.bayes.NaiveBayes " -R MAX
+java -classpath /usr/share/java/weka/weka.jar weka.classifiers.meta.Vote -l final_model_bayes+rule.model -T final.arff |tee final_output.txt
 fi
