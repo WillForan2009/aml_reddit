@@ -1,6 +1,14 @@
 #!/usr/bin/env perl
 use strict; use warnings;
 
+if(@ARGV<3 || !$ARGV[1]=~/^(arff)|(csv)$/) {
+    print "USAGE: $0 arff|csv attribute,attribute jsonfile jsonfile jsonfile ...\n";
+    print"\twhere attribute is a comma delerated combination of any:\n";
+    print"\tbody,time,subreddit,wordcount,readability,depth\n";
+    exit;
+}
+
+
 use JSON;
 use Data::Dumper;
 use Lingua::EN::Fathom;
@@ -9,19 +17,18 @@ use Switch;
 my $TIME=0;
 my $SUBREDDIT="error";
 my %feats;
+my @UPS=( '<3', '>=3' );
+my %UPS=( '<3'=>'0', '>=3'=>'1');
 my @ORDER; #=('time','subreddit','wordcount','readability','depth','ups');
 #downs levenshtein author replies parent_id link_id body id likes subreddit_id created_utc ups name created subreddit body_html
 
-if(@ARGV<3 || !$ARGV[1]=~/^(arff)|(csv)$/) {
-    print "USAGE: $0 arff|csv attribute,attribute jsonfile jsonfile jsonfile ...\n";
-    print"\twhere attribute is a comma delerated combination of any:\n";
-    print"\tbody,time,subreddit,wordcount,readability,depth\n";
-    exit;
-}
 
 my $type=shift;
 @ORDER=split(',', shift);
 #push  @ORDER, 'ups'; #this doesn't always go last
+
+
+
 
 #arff header
 if($type eq 'arff'){
@@ -29,7 +36,7 @@ if($type eq 'arff'){
     print '@relation ',"'Reddit Upboats-", time,"' \n\n";
     for my $k (@ORDER){
 	    print "\@attribute $k ";
-	    if($k eq "ups") { print "{0,1,2,3,4,5}\n";} 
+	    if($k eq "ups") { print '{' , join(',',values(%UPS)), "}\n"; } 
 	    elsif($k eq "subreddit") { print "{AskReddit, funny, gaming, IAmA, pics, politics, programming, science, technology, worldnews, WTF}\n";} 
 	    else {print "numeric\n";}
     }
@@ -73,8 +80,14 @@ sub findch{
 		my $body = $r->{'data'}->{'body'};
 		if(!$body){return}
 		
-		my ($re, $wc)=textanaly($body); 
-		if(!$re){$re=0;} 
+		#only compute if asked
+		my $re;my $wc;
+		if($feats{'readability'}||$feats{'wordcount'}) {
+		    my ($re, $wc)=textanaly($body);
+		    if(!$re){$re=0;} 
+		}
+
+		my $uniCount=$body=~s/[^[:ascii:]]//g;
 
 		for my $k (@ORDER) {
 			switch ($k){
@@ -83,27 +96,33 @@ sub findch{
 					case "wordcount" { $feats{$k}=$wc;}
 					case "depth" { $feats{$k}=$idx;}
 					case "subreddit" { $feats{$k}=$SUBREDDIT;}
-					case "unicode" { $feats{$k}=$body=~s/[^[:ascii:]]//g;}
-					case "hasCAPS" { $feats{$k}=$body=~/[A-Z]+/;}
-					case "hasFormat" { $feats{$k}=$body=~/(\[.+\])|(_.+_)|(\*.+\*)/;}
-					case "body" { $body=~s/,/ /g; 
-						     #$feats{'body'}='"'.$body.'"';
+					#case "hasUnicode" { $feats{$k}=$body=~s/[^[:ascii:]]//g;}
+					case "hasUnicode" { $feats{$k}=$uniCount?$uniCount:0;}
+					case "hasCAPS" { my $has=0; $has++ while($body=~/[A-Z]{2,}/g); $feats{$k}=$has;}
+					case "hasNum" { my $has=0; $has++ while($body=~/[0-9]+/g); $feats{$k}=$has;}
+					case "hasFormat" {my $has=0; $has++ while($body=~/(\[.+\])|(_.+_)|(\*.+\*)/g); $feats{$k}=$has;}
+					case "isQuestion" {my $has=0; $has++ while($body=~/(what)|(how)|(where)|(when)|(who)|(\?)/ig); $feats{$k}=$has;}
+					case "isMeta" {my $has=0; $has++ while($body=~/(karma)|(vote)|(upboat)/ig); $feats{$k}=$has;}
+					case "body" { 
+					
+						     #for SIDE
+						     $body=~s/,/ /g; 
+						     $feats{'body'}='"'.$body.'"';
 						     
-						     #mallet chantes
-						     $body=~s/\n/ /g; #for mallet 
-						     $feats{'body'}=$body;
+						     #for MALLET
+						     #$body=~s/\n/ /g; #for mallet 
+						     #$feats{'body'}=$body;
 
 						     } #remove , and add quotes
 					case "ups" {
-					    my $ups=$r->{'data'}->{'ups'};
-						    if( $ups==0 ) {$ups = 0 }
-						    elsif( $ups<4 ) {$ups = 1 }
-						    elsif($ups <10 ) {$ups = 2 }
-						    elsif($ups <15 ) {$ups = 3 }
-						    elsif($ups <20 ) {$ups = 4 }
-						    elsif($ups >=20 ) {$ups = 5 }
-						    else {$ups = 0 }
-					    $feats{$k}=$ups;
+					    my $ups=$r->{'data'}->{'ups'}-$r->{'data'}->{'downs'};
+					   # $feats{'ups'}=$ups;
+					    for my $condition (@UPS){
+					    	if(eval("$ups $condition")){
+					            $feats{'ups'}=$UPS{$condition};
+					            last;
+					        }
+					    }
 					}
 					else {$feats{$k}=$r->{'data'}->{$k};}
 			}
